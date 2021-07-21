@@ -1,9 +1,9 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, SchemaOptions } from 'mongoose';
+import { Document, SchemaOptions, Types } from 'mongoose';
 
 const options: SchemaOptions = {
-  collection: 'news',
+  collection: 'chattings',
   timestamps: true,
   toJSON: { virtuals: true, getters: true },
   toObject: { virtuals: true, getters: true },
@@ -12,12 +12,15 @@ const options: SchemaOptions = {
 @Schema(options)
 export class Chatting extends Document {
   @Prop({
-    unique: true,
-    required: true,
+    type: {
+      _id: { type: Types.ObjectId, required: true, ref: 'sockets' },
+      id: { type: String },
+      username: { type: String, required: true },
+    },
   })
   @IsNotEmpty()
   @IsString()
-  username: string;
+  user: string;
 
   @Prop({
     required: true,

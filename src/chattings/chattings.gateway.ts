@@ -1,4 +1,7 @@
+import { Chatting } from './models/chattings.model';
+import { Socket as SocketModel } from './models/sockets.model';
 import { Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 import {
   ConnectedSocket,
   MessageBody,
@@ -7,9 +10,9 @@ import {
   OnGatewayInit,
   SubscribeMessage,
   WebSocketGateway,
-  WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import { Socket } from 'socket.io';
+import { Model } from 'mongoose';
 
 @WebSocketGateway({ namespace: 'chattings' })
 export class ChattingsGateway
@@ -18,40 +21,54 @@ export class ChattingsGateway
   private logger = new Logger('chat');
   public tempData = {};
 
-  @WebSocketServer()
-  public server: Server;
+  constructor(
+    @InjectModel(Chatting.name) private readonly chattingModel: Model<Chatting>,
+    @InjectModel(SocketModel.name)
+    private readonly socketModel: Model<SocketModel>,
+  ) {}
 
-  afterInit() {
+  afterInit(): void {
     this.logger.log('socket server init');
   }
 
-  handleConnection(@ConnectedSocket() socket: Socket): any {
+  handleConnection(@ConnectedSocket() socket: Socket): void {
     this.logger.log('connected', socket.nsp.name);
     socket.emit('hello', socket.nsp.name);
   }
 
-  handleDisconnect(@ConnectedSocket() socket: Socket): any {
+  async handleDisconnect(@ConnectedSocket() socket: Socket) {
     this.logger.log('disconnected', socket.nsp.name);
+    await this.socketModel.findOneAndDelete({ id: socket.id });
   }
 
   @SubscribeMessage('new_user')
-  handleNewUser(
-    @MessageBody() data: any,
+  async sendConnectedUsername(
+    @MessageBody() username: string,
     @ConnectedSocket() socket: Socket,
-  ): void {
-    this.tempData[socket.id] = data;
-    socket.broadcast.emit('user_connected', data);
+  ) {
+    const exist = await this.chattingModel.exists({ username });
+    if (exist) socket.emit('already_exists', 'This strainger already exists.');
+    else {
+      await this.socketModel.create({ id: socket.id, username: username });
+      this.tempData[socket.id] = username;
+      socket.broadcast.emit('user_connected', username);
+    }
   }
 
   @SubscribeMessage('submit_chat')
-  handleSubmittedChat(
-    @MessageBody() data: any,
+  async sendNewChat(
+    @MessageBody() chat: string,
     @ConnectedSocket() socket: Socket,
-  ): void {
-    console.log(data);
+  ) {
     socket.broadcast.emit('new_chat', {
-      chat: data.data,
+      chat,
       username: this.tempData[socket.id],
     });
+  }
+
+  @SubscribeMessage('get_chatting')
+  async handleChattings(@ConnectedSocket() socket: Socket) {
+    const chattings = await this.chattingModel.find({});
+    socket.emit('load_chatting', chattings);
   }
 }

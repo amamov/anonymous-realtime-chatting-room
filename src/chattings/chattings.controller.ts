@@ -1,12 +1,15 @@
+import * as socket from 'socket.io';
 import { Controller, Get, Render } from '@nestjs/common';
 
-@Controller('chatting')
+@Controller()
 export class ChattingsController {
   @Get()
   @Render('index')
   root() {
     return {
-      data: { hello: [{ users: 1 }, { users: 2 }, { users: 3 }, { users: 4 }] },
+      socketio: socket,
+      isOk: true,
+      data: { title: 'Anonymous Chat', developer: ['Yoon', 'Sang', 'Seok'] },
     };
   }
 }
