@@ -1,6 +1,6 @@
 ## Anonymous Realtime Chatting Room Based In NestJS Example
 
-<p align="center"><img src="docs/demo.gif"></p>
+<p align="center"><img src="docs/demo.gif" width="1024" height"auto"></p>
 
 ## Stack
 
