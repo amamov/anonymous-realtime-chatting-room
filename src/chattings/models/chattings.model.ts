@@ -27,7 +27,7 @@ export class Chatting extends Document {
   })
   @IsNotEmpty()
   @IsString()
-  message: string;
+  chat: string;
 }
 
 export const ChattingSchema = SchemaFactory.createForClass(Chatting);

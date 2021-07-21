@@ -13,13 +13,13 @@ import {
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { Model } from 'mongoose';
+import { v4 as uuidV4 } from 'uuid';
 
 @WebSocketGateway({ namespace: 'chattings' })
 export class ChattingsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   private logger = new Logger('chat');
-  public tempData = {};
 
   constructor(
     @InjectModel(Chatting.name) private readonly chattingModel: Model<Chatting>,
@@ -32,13 +32,14 @@ export class ChattingsGateway
   }
 
   handleConnection(@ConnectedSocket() socket: Socket): void {
-    this.logger.log('connected', socket.nsp.name);
-    socket.emit('hello', socket.nsp.name);
+    this.logger.log(`connected : ${socket.id}`, socket.nsp.name);
   }
 
   async handleDisconnect(@ConnectedSocket() socket: Socket) {
-    this.logger.log('disconnected', socket.nsp.name);
-    await this.socketModel.findOneAndDelete({ id: socket.id });
+    const user = await this.socketModel.findOne({ id: socket.id });
+    socket.broadcast.emit('disconnect_user', user.username);
+    this.logger.log(`disconnected : ${socket.id}`, socket.nsp.name);
+    await user.delete();
   }
 
   @SubscribeMessage('new_user')
@@ -46,13 +47,18 @@ export class ChattingsGateway
     @MessageBody() username: string,
     @ConnectedSocket() socket: Socket,
   ) {
-    const exist = await this.chattingModel.exists({ username });
-    if (exist) socket.emit('already_exists', 'This strainger already exists.');
-    else {
+    const exist = await this.socketModel.exists({ username });
+    if (exist) {
+      username = `${username}_${uuidV4().slice(0, 5)}`;
+      await this.socketModel.create({
+        id: socket.id,
+        username,
+      });
+    } else {
       await this.socketModel.create({ id: socket.id, username: username });
-      this.tempData[socket.id] = username;
-      socket.broadcast.emit('user_connected', username);
     }
+    socket.emit('hello_user', username);
+    socket.broadcast.emit('user_connected', username);
   }
 
   @SubscribeMessage('submit_chat')
@@ -60,15 +66,14 @@ export class ChattingsGateway
     @MessageBody() chat: string,
     @ConnectedSocket() socket: Socket,
   ) {
+    const socketObject = await this.socketModel.findOne({ id: socket.id });
+    await this.chattingModel.create({
+      user: socketObject,
+      chat,
+    });
     socket.broadcast.emit('new_chat', {
       chat,
-      username: this.tempData[socket.id],
+      username: socketObject.username,
     });
-  }
-
-  @SubscribeMessage('get_chatting')
-  async handleChattings(@ConnectedSocket() socket: Socket) {
-    const chattings = await this.chattingModel.find({});
-    socket.emit('load_chatting', chattings);
   }
 }

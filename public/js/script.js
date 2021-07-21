@@ -20,10 +20,8 @@ const drawNewChat = (message) => {
 socket.on('user_connected', (username) => {
   drawNewChat(`${username} connected!`);
 });
-socket.on('new_chat', (data) => {
-  drawNewChat(`${data.username}: ${data.chat}`);
-  console.log(data);
-});
+socket.on('new_chat', (data) => drawNewChat(`${data.username}: ${data.chat}`));
+socket.on('disconnect_user', (username) => drawNewChat(`${username}: bye...`));
 
 //* event callback functions
 const handleSubmit = (event) => {
@@ -31,8 +29,7 @@ const handleSubmit = (event) => {
   const inputValue = event.target.elements[0].value;
   if (inputValue !== '') {
     event.target.elements[0].value = '';
-    //TODO
-    socket.emit('submit_chat', { data: inputValue });
+    socket.emit('submit_chat', inputValue);
     drawNewChat(`me : ${inputValue}`);
   }
 };
@@ -43,22 +40,16 @@ function registerEventListener() {
   inputElement.addEventListener('click', () => {});
 }
 
-function getChatting() {
-  //TODO 소켓으로 받아온 모든 데이터 뿌리기
-  socket.emit('get_chatting');
-  socket.once('load_chatting', (data) => {});
-  // chattingBoxElement.appendChild(buildNewMessage(message));
-}
-
 function helloUser() {
   const username = prompt('What is your name?');
-  drawHelloStranger(username);
-  socket.emit('new_user', username); // 유저 등록 -> user_connected on
+  socket.emit('new_user', username);
+  socket.once('hello_user', (username) => {
+    drawHelloStranger(username);
+  });
 }
 
 function init() {
   helloUser();
-  getChatting();
   registerEventListener();
 }
 
