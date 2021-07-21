@@ -37,9 +37,12 @@ export class ChattingsGateway
 
   async handleDisconnect(@ConnectedSocket() socket: Socket) {
     const user = await this.socketModel.findOne({ id: socket.id });
-    socket.broadcast.emit('disconnect_user', user.username);
+    if (user) {
+      socket.broadcast.emit('disconnect_user', user.username);
+      await user.delete();
+    }
+
     this.logger.log(`disconnected : ${socket.id}`, socket.nsp.name);
-    await user.delete();
   }
 
   @SubscribeMessage('new_user')
