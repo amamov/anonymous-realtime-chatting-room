@@ -21,7 +21,7 @@ const drawNewChat = (message, isMe = false) => {
     `;
   else
     chatBox = `
-    <div class='bg-green-300 w-3/4 ml-auto mr-4 my-2 p-2 rounded-lg clearfix break-all'>
+    <div class='bg-white w-3/4 ml-auto mr-4 my-2 p-2 rounded-lg clearfix break-all'>
       ${message}
     </div>
     `;
