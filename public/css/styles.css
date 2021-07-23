@@ -1,0 +1,29 @@
+@keyframes fadeIn_Ani {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spread_Ani {
+  from {
+    margin: 100%;
+    width: 300%;
+  }
+
+  to {
+    width: 100%;
+  }
+}
+
+body {
+  animation-duration: 1s;
+  animation-name: fadeIn_Ani;
+}
+
+.ani-spread {
+  animation-duration: 1s;
+  animation-name: spread_Ani;
+}

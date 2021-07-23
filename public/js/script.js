@@ -53,7 +53,7 @@ function registerEventListener() {
 }
 
 function helloUser() {
-  const username = prompt('What is your name?');
+  const username = prompt('Who are you?');
   socket.emit('new_user', username);
   socket.once('hello_user', (username) => {
     drawHelloStranger(username);
